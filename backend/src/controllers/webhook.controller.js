@@ -1,39 +1,24 @@
-import { Webhook } from "svix";
+
+import { verifyWebhook } from "@clerk/express/webhooks";
 import User from "../models/user.model.js";
 
 export const clerkWebhook = async (req, res) => {
+    let event;
+
+    // Step 1: Verify webhook using Clerk
     try {
-        const webhookSecret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+        event = await verifyWebhook(req);
+    } catch (error) {
+        console.error("Clerk Webhook Verification Error:", error);
 
-        if (!webhookSecret) {
-            return res.status(500).json({
-                success: false,
-                message: "Webhook secret is missing"
-            });
-        }
+        return res.status(400).json({
+            success: false,
+            message: "Webhook verification failed"
+        });
+    }
 
-        const svixId = req.headers["svix-id"];
-        const svixTimestamp = req.headers["svix-timestamp"];
-        const svixSignature = req.headers["svix-signature"];
-
-        if (!svixId || !svixTimestamp || !svixSignature) {
-            return res.status(400).json({
-                success: false,
-                message: "Missing webhook headers"
-            });
-        }
-
-        const webhook = new Webhook(webhookSecret);
-
-        const event = webhook.verify(
-            req.body,
-            {
-                "svix-id": svixId,
-                "svix-timestamp": svixTimestamp,
-                "svix-signature": svixSignature
-            }
-        );
-
+    // Step 2: Process verified event
+    try {
         const { type, data } = event;
 
         switch (type) {
@@ -93,11 +78,11 @@ export const clerkWebhook = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Clerk Webhook Error:", error);
+        console.error("Clerk Webhook Processing Error:", error);
 
-        return res.status(400).json({
+        return res.status(500).json({
             success: false,
-            message: "Webhook verification or processing failed"
+            message: "Webhook processing failed"
         });
     }
 };
