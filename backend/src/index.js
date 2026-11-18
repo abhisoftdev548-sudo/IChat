@@ -9,15 +9,15 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 
 const app = express();
-app.use(express.json());
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
-app.use(clerkMiddleware());
 
 app.use(
   "/api/webhooks/clerk",
   express.raw({ type: "application/json" }),
   webhookRouter,
 );
+app.use(express.json());
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+app.use(clerkMiddleware());
 
 
 const __filename = fileURLToPath(import.meta.url);
