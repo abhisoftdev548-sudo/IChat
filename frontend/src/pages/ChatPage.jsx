@@ -1,5 +1,4 @@
-
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 
 import ChatSidebar from "../components/chat/ChatSidebar";
 import ChatSection from "../components/chat/ChatSection";
@@ -8,75 +7,67 @@ import { useChatStore } from "../store/useChatStore";
 import { useSelectedConversation } from "../hooks/useSelectedConversation";
 import { useTheme } from "../context/theme";
 
-const ChatPage = () => {
-  const getConversations = useChatStore(
-    (state) => state.getConversations
-  );
+export default function ChatPage() {
+    const getConversations = useChatStore((state) => state.getConversations);
+    const getMessages = useChatStore((state) => state.getMessages);
+    const getUsers = useChatStore((state) => state.getUsers);
+    const setActiveConversationId = useChatStore(
+        (state) => state.setActiveConversationId
+    );
 
-  const getMessages = useChatStore(
-    (state) => state.getMessages
-  );
+    const subscribeToMessages = useChatStore(
+        (state) => state.subscribeToMessages
+    );
 
-  const getUsers = useChatStore(
-    (state) => state.getUsers
-  );
+    const unsubscribeToMessages = useChatStore(
+        (state) => state.unsubscribeToMessages
+    );
 
-  const subscribeToMessages = useChatStore(
-    (state) => state.subscribeToMessages
-  );
+    const { activeConversationId, activeConversation } =
+        useSelectedConversation();
 
-  const unsubscribeToMessages = useChatStore(
-    (state) => state.unsubscribeToMessages
-  );
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
 
-  const {
-    activeConversationId,
-    activeConversation,
-  } = useSelectedConversation();
+    useEffect(() => {
+        getUsers();
+        getConversations();
+    }, [getUsers, getConversations]);
 
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
+    useEffect(() => {
+        if (!activeConversationId) return;
 
-  useEffect(() => {
-    getUsers();
-    getConversations();
-  }, [getUsers, getConversations]);
+        getMessages(activeConversationId);
+        subscribeToMessages(activeConversationId);
 
-  useEffect(() => {
-    if (!activeConversationId) return;
+        return () => unsubscribeToMessages();
+    }, [
+        activeConversationId,
+        getMessages,
+        subscribeToMessages,
+        unsubscribeToMessages,
+    ]);
 
-    getMessages(activeConversationId);
-    subscribeToMessages(activeConversationId);
+    return (
+        <main
+            className={`h-dvh w-full overflow-hidden p-0 sm:p-3 ${
+                isDark ? "bg-[#080808]" : "bg-[#f5f5f5]"
+            }`}
+        >
+            <div
+                className={`mx-auto flex h-full min-h-0 min-w-0 max-w-[1600px] overflow-hidden rounded-none sm:rounded-2xl sm:border sm:shadow-xl ${
+                    isDark
+                        ? "bg-[#101010] border-white/10"
+                        : "bg-white border-black/10"
+                }`}
+            >
+                <ChatSidebar />
 
-    return () => unsubscribeToMessages();
-  }, [
-    activeConversationId,
-    getMessages,
-    subscribeToMessages,
-    unsubscribeToMessages,
-  ]);
-
-  return (
-    <div
-      className={`h-screen w-full p-3 sm:p-5 overflow-hidden ${
-        isDark ? "bg-[#080808]" : "bg-[#f5f5f5]"
-      }`}
-    >
-      <div
-        className={`h-full max-w-[1600px] mx-auto flex overflow-hidden rounded-[24px] border shadow-xl ${
-          isDark
-            ? "bg-[#101010] border-white/10"
-            : "bg-white border-black/10"
-        }`}
-      >
-        {/* Left Sidebar */}
-        <ChatSidebar />
-
-        {/* Right Chat Area */}
-        <ChatSection conversation={activeConversation} />
-      </div>
-    </div>
-  );
-};
-
-export default ChatPage;
+                <ChatSection
+                    conversation={activeConversation}
+                    onBack={() => setActiveConversationId(null)}
+                />
+            </div>
+        </main>
+    );
+}

@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useUser, useClerk } from "@clerk/react";
 import {
   MessageCircle,
   Users,
   Search,
-  ChevronDown,
   UserRound,
   LogOut,
   Plus,
@@ -45,20 +44,19 @@ function mapUserForList(user, onlineUsers = []) {
 const ChatSidebar = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
-  const { user, isLoaded } = useUser();
+  const { user } = useUser();
   const { openUserProfile, signOut } = useClerk();
 
-  const {
-    conversations,
-    users,
-    searchQuery,
-    setSearchQuery,
-    sidebarTab,
-    setSidebarTab,
-    setActiveConversationId,
-  } = useChatStore();
-
-  const onlineUsers = useAuthStore((state) => state.onlineUsers || []);
+  const conversations = useChatStore((state) => state.conversations);
+  const users = useChatStore((state) => state.users);
+  const searchQuery = useChatStore((state) => state.searchQuery);
+  const setSearchQuery = useChatStore((state) => state.setSearchQuery);
+  const sidebarTab = useChatStore((state) => state.sidebarTab);
+  const setSidebarTab = useChatStore((state) => state.setSidebarTab);
+  const setActiveConversationId = useChatStore(
+    (state) => state.setActiveConversationId,
+  );
+  const onlineUsers = useAuthStore((state) => state.onlineUsers);
   const { activeConversationId } = useSelectedConversation();
   const { theme } = useTheme();
 
@@ -90,14 +88,12 @@ const ChatSidebar = () => {
     await signOut();
   };
 
-  console.log(user)
-
   const userName = user?.fullName || "User";
   const userEmail = user?.primaryEmailAddress?.emailAddress || "";
 
   return (
     <aside
-      className={`w-[280px] sm:w-[310px] lg:w-[330px] shrink-0 h-full flex flex-col border-r ${
+      className={`${activeConversationId ? "hidden md:flex" : "flex"} w-full md:w-[290px] lg:w-[330px] min-w-0 shrink-0 h-full flex-col overflow-hidden border-r ${
         isDark
           ? "bg-[#111111] border-white/10 text-white"
           : "bg-white border-black/10 text-black"
@@ -107,26 +103,26 @@ const ChatSidebar = () => {
       <div className="px-5 pt-6 pb-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 shrink-0 rounded-xl bg-[var(--heroui-primary)] text-white flex items-center justify-center">
+            <div className={`w-9 h-9 shrink-0 rounded-xl bg-[var(--accent)] flex items-center justify-center ${
+              isDark ? "text-[var(--accent-foreground)]" : "text-black"
+            }`}>
               <MessageCircle size={19} />
             </div>
 
             <h1 className="text-xl font-bold tracking-tight">
-              IChat<span className="text-[var(--heroui-primary)]">.</span>
+              IChat<span className="text-[var(--accent)]">.</span>
             </h1>
           </div>
 
           {/* Logged-in User Avatar */}
           <div
             className="relative"
-            onMouseEnter={() => setIsProfileMenuOpen(true)}
-            onMouseLeave={() => setIsProfileMenuOpen(false)}
           >
             <button
               onClick={() => setIsProfileMenuOpen((prev) => !prev)}
               aria-label="Open account menu"
               aria-expanded={isProfileMenuOpen}
-              className={`relative w-10 h-10 rounded-full overflow-hidden border-2 border-[var(--heroui-primary)] flex items-center justify-center font-semibold text-sm transition ${
+              className={`relative w-10 h-10 rounded-full overflow-hidden border-2 border-[var(--accent)] flex items-center justify-center font-semibold text-sm transition ${
                 isDark ? "bg-white/10" : "bg-black/5"
               }`}
             >
@@ -152,7 +148,7 @@ const ChatSidebar = () => {
               >
                 <div className="p-4 border-b border-current/10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden bg-[var(--heroui-primary)]/10 flex items-center justify-center font-semibold">
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden bg-[var(--accent)]/10 flex items-center justify-center font-semibold">
                       {user?.imageUrl ? (
                         <img
                           src={user.imageUrl}
@@ -222,7 +218,7 @@ const ChatSidebar = () => {
               setSearchQuery("");
             }}
             aria-label="Find a user"
-            className="w-9 h-9 rounded-xl bg-[var(--heroui-primary)] text-white flex items-center justify-center hover:opacity-90 transition"
+            className="w-9 h-9 rounded-xl theme-accent-control flex items-center justify-center hover:opacity-90 transition"
           >
             <Plus size={19} />
           </button>
@@ -237,15 +233,15 @@ const ChatSidebar = () => {
           }`}
         >
           <button
+            type="button"
             onClick={() => {
               setSidebarTab("chats");
               setSearchQuery("");
             }}
+            aria-pressed={sidebarTab === "chats"}
             className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
               sidebarTab === "chats"
-                ? isDark
-                  ? "bg-[#292929] text-white shadow"
-                  : "bg-white text-black shadow-sm"
+                ? "theme-accent-control shadow-sm"
                 : "opacity-50 hover:opacity-100"
             }`}
           >
@@ -254,15 +250,15 @@ const ChatSidebar = () => {
           </button>
 
           <button
+            type="button"
             onClick={() => {
               setSidebarTab("users");
               setSearchQuery("");
             }}
+            aria-pressed={sidebarTab === "users"}
             className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
               sidebarTab === "users"
-                ? isDark
-                  ? "bg-[#292929] text-white shadow"
-                  : "bg-white text-black shadow-sm"
+                ? "theme-accent-control shadow-sm"
                 : "opacity-50 hover:opacity-100"
             }`}
           >
@@ -314,10 +310,12 @@ const ChatSidebar = () => {
             return (
               <button
                 key={item.id}
+                type="button"
                 onClick={() => handleSelect(item)}
+                aria-pressed={isSelected}
                 className={`w-full flex items-center gap-3 p-3 mb-1 rounded-xl text-left transition ${
                   isSelected
-                    ? "bg-[var(--heroui-primary)]/10"
+                    ? "theme-accent-selection"
                     : isDark
                       ? "hover:bg-white/5"
                       : "hover:bg-black/5"
@@ -362,7 +360,7 @@ const ChatSidebar = () => {
                     </span>
 
                     {sidebarTab === "chats" && item.unreadCount > 0 && (
-                      <span className="min-w-5 h-5 px-1 rounded-full bg-[var(--heroui-primary)] text-white text-[10px] flex items-center justify-center">
+                      <span className="min-w-5 h-5 px-1 rounded-full theme-accent-control text-[10px] flex items-center justify-center">
                         {item.unreadCount}
                       </span>
                     )}

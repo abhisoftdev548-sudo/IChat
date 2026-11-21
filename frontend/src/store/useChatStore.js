@@ -65,7 +65,7 @@ export const useChatStore = create((set, get) => ({
         const { selectedUser, messages } = get();
         if(!selectedUser) return false;
         try{
-            const res = await axiosInstance.post(`/message/send/${selectedUser._id}`, messageData);
+            const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
             set({messages: [...messages, res.data.data], composerText: ""});
             get().getConversations();
             return true;
@@ -107,7 +107,7 @@ export const useChatStore = create((set, get) => ({
 
     setComposerText: (composerText) => set({composerText}),
 
-    setSountEnabled: (isSoundEnabled) => set({isSoundEnabled}),
+    setSoundEnabled: (isSoundEnabled) => set({isSoundEnabled}),
 
     sendTextMessage: async (conversationId) => {
         const messageText = get().composerText.trim();

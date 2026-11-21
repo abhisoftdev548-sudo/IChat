@@ -1,61 +1,104 @@
-import {useEffect, useLayoutEffect, useState} from "react";
-import {DEFAULT_THEME_PRESET_ID} from "../data/heroui-theme-presets";
-import {applyThemePresetToDocument, isValidThemePreset, ThemeContext} from "./theme";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { DEFAULT_THEME_PRESET_ID } from "../data/heroui-theme-presets";
+import {
+  applyThemePresetToDocument,
+  isValidThemePreset,
+  ThemeContext,
+} from "./theme";
 
-function getSystemTheme(){
-    if(typeof window === "undefined") return "light";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+const THEME_KEY = "theme";
+const THEME_PRESET_KEY = "themePreset";
+
+function getSystemTheme() {
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }
 
-function readStoredTheme(){
-    const theme = localStorage.getItem("theme");
-    if(theme === "light" || theme === "dark") return theme;
-    return null;
+function readStoredTheme() {
+  const theme = localStorage.getItem(THEME_KEY);
+  return theme === "light" || theme === "dark" || theme === "system"
+    ? theme
+    : null;
 }
 
-function applyDomTheme(theme){
-    const root = document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
-    root.setAttribute("data-theme", theme === "dark" ? "dark" : "light");
+function readStoredThemePreset() {
+  const themePreset =
+    localStorage.getItem(THEME_PRESET_KEY) ||
+    localStorage.getItem("theme-preset");
+  return themePreset && isValidThemePreset(themePreset)
+    ? themePreset
+    : DEFAULT_THEME_PRESET_ID;
 }
 
-function readStoredThemePreset(){
-    const themePreset = localStorage.getItem("themePreset");
-    if(themePreset && isValidThemePreset(themePreset)) return themePreset;
-    return DEFAULT_THEME_PRESET_ID;
+function applyDomTheme(theme) {
+  const root = document.documentElement;
+  root.classList.toggle("dark", theme === "dark");
+  root.setAttribute("data-theme", theme);
 }
 
-export function ThemeProvider({children}){
-    const [theme , setTheme] = useState(() => readStoredTheme() ?? getSystemTheme());
-    const [themePreset, setThemePreset] = useState(readStoredThemePreset);
+export function ThemeProvider({ children }) {
+  const [themeMode, setThemeMode] = useState(
+    () => readStoredTheme() ?? "system",
+  );
+  const [systemTheme, setSystemTheme] = useState(getSystemTheme);
+  const [themePreset, setThemePreset] = useState(readStoredThemePreset);
+  const theme = themeMode === "system" ? systemTheme : themeMode;
 
-    useLayoutEffect(()=>{
-        applyDomTheme(theme);
-    }, [theme]);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const updateSystemTheme = (event) =>
+      setSystemTheme(event.matches ? "dark" : "light");
 
-    useLayoutEffect(()=>{
-        applyThemePresetToDocument(themePreset);
-    }, [themePreset]);
+    mediaQuery.addEventListener("change", updateSystemTheme);
+    return () => mediaQuery.removeEventListener("change", updateSystemTheme);
+  }, []);
 
-    useEffect(()=>{
-        localStorage.setItem("theme", theme);
-        localStorage.setItem("theme-preset", themePreset);
-    }, [theme, themePreset]);
+  useLayoutEffect(() => {
+    applyDomTheme(theme);
+  }, [theme]);
 
-    const setThemeState = (next) => setTheme(next);
+  useLayoutEffect(() => {
+    applyThemePresetToDocument(themePreset);
+  }, [themePreset]);
 
-    const toggleTheme = () => {
-        setThemeState(theme === "light" ? "dark" : "light");
-    };
-    const setThemePresetState = (next) => {
-        setThemePreset((prev) => {
-            const resolved = typeof next === "function" ? next(prev) : next;
-            return isValidThemePreset(resolved) ? resolved : DEFAULT_THEME_PRESET_ID;
-        })
+  useEffect(() => {
+    localStorage.setItem(THEME_KEY, themeMode);
+    localStorage.setItem(THEME_PRESET_KEY, themePreset);
+  }, [themeMode, themePreset]);
+
+  const setTheme = (nextTheme) => {
+    if (nextTheme === "light" || nextTheme === "dark" || nextTheme === "system") {
+      setThemeMode(nextTheme);
     }
+  };
 
-     const value = { theme, setTheme, toggleTheme, themePreset, setThemePreset };
+  const toggleTheme = () => {
+    setThemeMode(theme === "light" ? "dark" : "light");
+  };
 
-    return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  const setThemePresetState = (nextPreset) => {
+    setThemePreset((currentPreset) => {
+      const resolvedPreset =
+        typeof nextPreset === "function"
+          ? nextPreset(currentPreset)
+          : nextPreset;
+      return isValidThemePreset(resolvedPreset)
+        ? resolvedPreset
+        : DEFAULT_THEME_PRESET_ID;
+    });
+  };
 
+  const value = {
+    theme,
+    setTheme,
+    toggleTheme,
+    themePreset,
+    setThemePreset: setThemePresetState,
+  };
+
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 }

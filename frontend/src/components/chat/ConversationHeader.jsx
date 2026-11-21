@@ -1,16 +1,25 @@
 
-import React, { useState } from "react";
-import { Palette, MoreVertical } from "lucide-react";
+import { useState } from "react";
+import {
+  ArrowLeft,
+  Palette,
+  MoreVertical,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 
 import { useTheme } from "../../context/theme";
+import { useChatStore } from "../../store/useChatStore";
 import ThemeToggle from "../ThemeToggle";
 import ThemePresetModal from "../ThemePresetModal";
 
-const ConversationHeader = ({ conversation }) => {
+const ConversationHeader = ({ conversation, onBack }) => {
   const [isPresetOpen, setIsPresetOpen] = useState(false);
 
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const isSoundEnabled = useChatStore((state) => state.isSoundEnabled);
+  const setSoundEnabled = useChatStore((state) => state.setSoundEnabled);
 
   const receiver = conversation?.peer || conversation;
 
@@ -30,14 +39,25 @@ const ConversationHeader = ({ conversation }) => {
   return (
     <>
       <header
-        className={`h-[76px] shrink-0 px-4 sm:px-6 flex items-center justify-between border-b ${
+        className={`h-16 sm:h-[76px] shrink-0 px-3 sm:px-6 flex items-center justify-between gap-2 border-b ${
           isDark
             ? "bg-[#101010] border-white/10 text-white"
             : "bg-white border-black/10 text-black"
         }`}
       >
         {/* Receiver Details */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back to conversations"
+            className={`md:hidden grid size-9 shrink-0 place-items-center rounded-xl ${
+              isDark ? "hover:bg-white/10" : "hover:bg-black/5"
+            }`}
+          >
+            <ArrowLeft size={19} />
+          </button>
+
           <div className="relative shrink-0">
             {avatar ? (
               <img
@@ -72,25 +92,40 @@ const ConversationHeader = ({ conversation }) => {
         </div>
 
         {/* Header Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <button
             onClick={() => setIsPresetOpen(true)}
             aria-label="Change theme preset"
-            className={`h-10 px-3 flex items-center gap-2 rounded-xl border transition ${
+            className={`size-9 sm:size-10 sm:w-auto sm:px-3 flex items-center justify-center sm:gap-2 rounded-xl border transition ${
               isDark
                 ? "border-white/10 hover:bg-white/10"
                 : "border-black/10 hover:bg-black/5"
             }`}
           >
             <Palette size={17} />
-            <span className="hidden sm:inline text-sm">Themes</span>
+            <span className="hidden md:inline text-sm">Themes</span>
           </button>
 
           <ThemeToggle />
 
           <button
+            type="button"
+            onClick={() => setSoundEnabled(!isSoundEnabled)}
+            aria-label={isSoundEnabled ? "Turn sounds off" : "Turn sounds on"}
+            aria-pressed={isSoundEnabled}
+            title={isSoundEnabled ? "Turn sounds off" : "Turn sounds on"}
+            className={`grid size-9 sm:size-10 place-items-center rounded-xl border transition ${
+              isSoundEnabled
+                ? "theme-accent-control border-transparent"
+                : "theme-accent-outline"
+            }`}
+          >
+            {isSoundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </button>
+
+          <button
             aria-label="Conversation options"
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition ${
+            className={`hidden sm:flex w-10 h-10 rounded-xl items-center justify-center transition ${
               isDark ? "hover:bg-white/10" : "hover:bg-black/5"
             }`}
           >
