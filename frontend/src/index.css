@@ -1,111 +1,431 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
+@import "@heroui/styles";
+@import "./styles/heroui-theme-presets.css";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+/* HeroUI's dark fallback uses prefers-color-scheme but forgot [data-theme="light"], so OS dark +
+   app light still applied dark: utilities. Re-define so explicit light theme wins system dark. */
+@custom-variant dark {
+  &:is(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    &::before,
+    &::after {
+      @slot;
+    }
+  }
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  @media (prefers-color-scheme: dark) {
+    &:not(
+        :is(
+          .dark,
+          .dark *,
+          [data-theme="dark"],
+          [data-theme="dark"] *,
+          [data-theme="light"],
+          [data-theme="light"] *
+        )
+      )
+      & {
+      @slot;
+
+      &::before,
+      &::after {
+        @slot;
+      }
+    }
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+@keyframes auth-float-y {
+  0%,
+  100% {
+    transform: translateY(0);
   }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  50% {
+    transform: translateY(-12px);
   }
 }
 
-body {
-  margin: 0;
+@keyframes auth-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+
+
+
+.chat-animation {
+  --animation-border: rgba(128, 128, 128, 0.2);
+  --animation-card: #ffffff;
+  --animation-text: #111111;
+  --animation-muted: #888888;
+  --animation-bubble: #f1f1f1;
+  --animation-accent: #111111;
+
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: 530px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.chat-animation-dark {
+  --animation-border: rgba(255, 255, 255, 0.12);
+  --animation-card: #151515;
+  --animation-text: #ffffff;
+  --animation-muted: #777777;
+  --animation-bubble: #252525;
+  --animation-accent: #ffffff;
+}
+
+.chat-animation-light {
+  --animation-border: rgba(0, 0, 0, 0.1);
+  --animation-card: #ffffff;
+  --animation-text: #111111;
+  --animation-muted: #888888;
+  --animation-bubble: #f1f1f1;
+  --animation-accent: #111111;
+}
+
+/* Center icon */
+
+.animation-center {
+  position: relative;
+  z-index: 3;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
+  align-items: center;
+  animation: center-float 4s ease-in-out infinite;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+.center-glow {
+  position: absolute;
+  width: 230px;
+  height: 230px;
+  border-radius: 50%;
+  background: var(--animation-accent);
+  opacity: 0.055;
+  filter: blur(65px);
+  animation: glow-pulse 4s ease-in-out infinite;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+.center-icon {
+  position: relative;
+  width: 115px;
+  height: 115px;
+  border-radius: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--animation-accent);
+  color: var(--animation-card);
+  box-shadow: 0 20px 70px rgba(128, 128, 128, 0.15);
+}
+
+.icon-dot {
+  position: absolute;
+  top: 23px;
+  right: 25px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #777777;
+  border: 2px solid var(--animation-accent);
+}
+
+.center-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--animation-text);
+}
+
+/* Orbit rings */
+
+.animation-orbit {
+  position: absolute;
+  z-index: 0;
+  border: 1px solid var(--animation-border);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.orbit-one {
+  width: 330px;
+  height: 330px;
+  animation: orbit-rotate 25s linear infinite;
+}
+
+.orbit-two {
+  width: 470px;
+  height: 470px;
+  border-style: dashed;
+  opacity: 0.6;
+  animation: orbit-rotate 40s linear infinite reverse;
+}
+
+/* Floating cards */
+
+.floating-card {
+  position: absolute;
+  z-index: 4;
+  width: 205px;
+  padding: 14px;
+  border: 1px solid var(--animation-border);
+  border-radius: 17px;
+  background: var(--animation-card);
+  color: var(--animation-text);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.08);
+}
+
+.card-one {
+  top: 65px;
+  left: 5px;
+  animation: card-one-float 5s ease-in-out infinite;
+}
+
+.card-two {
+  right: 0;
+  bottom: 75px;
+  animation: card-two-float 5.5s ease-in-out infinite;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 13px;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.avatar-one {
+  background: #dedede;
+  color: #111111;
+}
+
+.avatar-two {
+  background: #777777;
+  color: white;
+}
+
+.card-name {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.card-time {
+  margin-top: 2px;
+  font-size: 9px;
+  color: var(--animation-muted);
+}
+
+.online-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #777777;
+  margin-left: auto;
+}
+
+.heart-icon {
+  margin-left: auto;
+  color: #999999;
+}
+
+.message-bubble {
+  padding: 10px 11px;
+  border-radius: 11px;
+  border-top-left-radius: 3px;
+  background: var(--animation-bubble);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.outgoing-bubble {
+  border-radius: 11px;
+  border-top-right-radius: 3px;
+  background: var(--animation-accent);
+  color: var(--animation-card);
+}
+
+/* Typing indicator */
+
+.typing-card {
+  width: 150px;
+  top: 365px;
+  left: 35px;
+  animation: typing-float 4.5s ease-in-out infinite;
+}
+
+.typing-label {
+  font-size: 9px;
+  color: var(--animation-muted);
+  margin-bottom: 10px;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--animation-text);
+  animation: typing-bounce 1s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* Floating send icon */
+
+.floating-send {
+  position: absolute;
+  top: 170px;
+  right: 65px;
+  z-index: 5;
+  width: 43px;
+  height: 43px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--animation-accent);
+  color: var(--animation-card);
+  animation: send-float 4s ease-in-out infinite;
+}
+
+/* Particles */
+
+.floating-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--animation-muted);
+  opacity: 0.5;
+}
+
+.particle-one {
+  top: 100px;
+  right: 150px;
+  animation: particle-float 4s infinite;
+}
+
+.particle-two {
+  bottom: 100px;
+  right: 180px;
+  animation: particle-float 5s infinite reverse;
+}
+
+.particle-three {
+  top: 260px;
+  left: 30px;
+  animation: particle-float 4.5s infinite;
+}
+
+.particle-four {
+  bottom: 55px;
+  left: 200px;
+  animation: particle-float 5.5s infinite reverse;
+}
+
+/* Keyframes */
+
+@keyframes center-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.04; }
+  50% { transform: scale(1.2); opacity: 0.1; }
+}
+
+@keyframes orbit-rotate {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes card-one-float {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-15px) rotate(-1deg); }
+}
+
+@keyframes card-two-float {
+  0%, 100% { transform: translateY(0) rotate(3deg); }
+  50% { transform: translateY(14px) rotate(1deg); }
+}
+
+@keyframes typing-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes send-float {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  50% { transform: translate(-8px, -10px) rotate(-8deg); }
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+@keyframes particle-float {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(-15px); opacity: 0.8; }
+}
+
+/* Responsive */
+
+@media (max-width: 1023px) {
+  .chat-animation {
+    display: none;
   }
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+
+@media (max-width: 500px) {
+  .floating-card {
+    width: 175px;
   }
 }
-p {
-  margin: 0;
-}
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
+/* Accessibility */
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+@media (prefers-reduced-motion: reduce) {
+  .chat-animation *,
+  .chat-animation *::before,
+  .chat-animation *::after {
+    animation: none !important;
+  }
 }

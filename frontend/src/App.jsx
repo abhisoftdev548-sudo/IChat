@@ -1,19 +1,28 @@
+import { Navigate, Route, Routes } from 'react-router'
 import './App.css'
-import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/react'
+import { Show, SignInButton, SignUpButton, useAuth, UserButton } from '@clerk/react'
+import ChatPage from './pages/ChatPage'
+import AuthPage from './pages/AuthPage'
+import { useAuthStore } from './store/useAuthStore'
+import { useEffect } from 'react'
+import { Toaster } from 'react-hot-toast'
 
 function App() {
+  const {isSignedIn, isLoaded} = useAuth()
+  const {clearAuth, isCheckingAuth, checkAuth} = useAuthStore();
+  useEffect(()=>{
+    if(!isLoaded) return;
+    if(isSignedIn) checkAuth();
+    else clearAuth();
+  }, [checkAuth, clearAuth, isLoaded, isSignedIn]);
+  if(!isLoaded || (isSignedIn && isCheckingAuth))  return <p>Loading...</p>
   return (
     <>
-    <h1>Hellow World!</h1>
-      <header>
-        <Show when="signed-out">
-          <SignInButton mode="modal" />
-          <SignUpButton mode="modal" />
-        </Show>
-        <Show when="signed-in" >
-          <UserButton />
-        </Show>
-      </header>
+    <Routes>
+      <Route path="/" element={isSignedIn ? <ChatPage/> : <Navigate to={"/auth"} replace />} />
+      <Route path="/auth" element={!isSignedIn ? <AuthPage/> : <Navigate to={"/"} replace />}  />
+    </Routes>
+    <Toaster/>
     </>
   )
 }
