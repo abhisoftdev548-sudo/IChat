@@ -1,7 +1,7 @@
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import { hasImageKitConfig, uploadChatMedia } from "../configs/imagekit.config.js";
-import { getReceiverSocketId } from "../configs/socket.config.js";
+import { getReceiverSocketId, io } from "../configs/socket.config.js";
 export const getUsers = async (req, res) => {
   try {
     console.log("working")
@@ -92,8 +92,8 @@ export const sendMessage = async (req, res) => {
             if(!hasImageKitConfig()){
                 return res.status(500).json({success: false, message: "Media upload is not configured"});
             }
-            const url = uploadChatMedia(req.file);
-            if(req.file.mimetype.startWith("video/")) videoUrl = url;
+            const url = await uploadChatMedia(req.file);
+            if(req.file.mimetype.startsWith("video/")) videoUrl = url;
             else imageUrl = url;
         }
         const message = await new Message({

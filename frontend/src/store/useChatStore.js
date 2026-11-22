@@ -17,6 +17,7 @@ export const useChatStore = create((set, get) => ({
     composerText: "",
     isSoundEnabled: true,
     isSendingMedia: false,
+    isSendingMessage: false,
 
     getUsers: async () => {
         set({isUsersLoading: true});
@@ -62,15 +63,22 @@ export const useChatStore = create((set, get) => ({
     },
 
     sendMessage: async (messageData) => {
-        const { selectedUser, messages } = get();
+        const { selectedUser } = get();
         if(!selectedUser) return false;
+        set({isSendingMessage: true});
         try{
             const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
-            set({messages: [...messages, res.data.data], composerText: ""});
+            set((state) => ({
+                messages: [...state.messages, res.data.data],
+                composerText: "",
+            }));
             get().getConversations();
             return true;
         }catch(err){
             toast.error(err.response?.data?.message || "Failed to send message");
+            return false;
+        }finally{
+            set({isSendingMessage: false});
         }
     },
 
@@ -78,17 +86,21 @@ export const useChatStore = create((set, get) => ({
         if(!userId) return;
         const socket = useAuthStore.getState().socket;
         if(!socket) return;
-        socket.off("newMessages");
-        socket.on("newMessages", (newMessages) => {
-            if(String(newMessages.senderId) !== String(userId)) return;
-            set({messsages: [...get().messages, newMessages]});
+        socket.off("newMessage");
+        socket.on("newMessage", (newMessage) => {
+            if(String(newMessage.senderId) !== String(userId)) return;
+            set((state) => ({
+                messages: state.messages.some((message) => message._id === newMessage._id)
+                    ? state.messages
+                    : [...state.messages, newMessage],
+            }));
             get().getConversations();
         });
     },
 
     unsubscribeFromMessages: () => {
         const socket = useAuthStore.getState().socket;
-        socket?.off("newMessages");
+        socket?.off("newMessage");
     },
 
     setSelectedUser: (selectedUser) => set({selectedUser}),
@@ -116,11 +128,12 @@ export const useChatStore = create((set, get) => ({
         return get().sendMessage({text: messageText});
     },
 
-    sendMediaMessage: async ({conversationId, file}) => {
+    sendMediaMessage: async ({conversationId, file, text}) => {
         if(!conversationId || !file) return false;
 
         const formData = new FormData();
         formData.append("media", file);
+        if(text?.trim()) formData.append("text", text.trim());
         set({isSendingMedia: true});
         try{
             return await get().sendMessage(formData);

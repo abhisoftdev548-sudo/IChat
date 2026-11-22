@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { Paperclip, Send } from "lucide-react";
+import { useRef, useState } from "react";
+import { Paperclip, Send, X } from "lucide-react";
 
 import { useChatStore } from "../../store/useChatStore";
 import { useSelectedConversation } from "../../hooks/useSelectedConversation";
@@ -18,6 +18,7 @@ export function ChatComposer() {
     const { playRandomKeyStrokeSound } = useKeyboardSound();
 
     const mediaInputRef = useRef(null);
+    const [pendingMedia, setPendingMedia] = useState(null);
 
     const isSending = useChatStore((state) => state.isSendingMessage);
 
@@ -28,11 +29,18 @@ export function ChatComposer() {
     };
 
     const handleSend = async () => {
-        if (!composerText.trim() || !activeConversationId || isSending) return;
+        if ((!composerText.trim() && !pendingMedia) || !activeConversationId || isSending) return;
 
-        const didSendMessage = await sendTextMessage(activeConversationId);
+        const didSendMessage = pendingMedia
+            ? await sendMediaMessage({
+                conversationId: activeConversationId,
+                file: pendingMedia,
+                text: composerText,
+            })
+            : await sendTextMessage(activeConversationId);
 
         if (didSendMessage) {
+            setPendingMedia(null);
             playSoundIfEnabled();
         }
     };
@@ -49,35 +57,44 @@ export function ChatComposer() {
         }
     };
 
-    const handleMediaPick = async (event) => {
+    const handleMediaPick = (event) => {
         const file = event.target.files?.[0];
 
         // Same file ko dobara select karne ki permission
         event.target.value = "";
 
-        if (!file || !activeConversationId || isSendingMedia) return;
-
-        const didSendMessage = await sendMediaMessage({
-            conversationId: activeConversationId,
-            file,
-        });
-
-        if (didSendMessage) {
-            playSoundIfEnabled();
-        }
+        if (!file || !activeConversationId || isSending) return;
+        setPendingMedia(file);
     };
 
-    const canSend = composerText.trim().length > 0 && !isSending;
+    const canSend = (composerText.trim().length > 0 || pendingMedia) && !isSending;
 
     return (
         <footer className="shrink-0 border-t border-default-200/60 p-3 sm:p-4">
+            {pendingMedia && (
+                <div className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-default-200 bg-default-100/70 px-3 py-2">
+                    <span className="min-w-0 truncate text-xs text-default-600">
+                        {pendingMedia.name}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setPendingMedia(null)}
+                        disabled={isSending}
+                        aria-label="Remove attachment"
+                        title="Remove attachment"
+                        className="grid size-7 shrink-0 place-items-center rounded-lg text-default-500 hover:bg-default-200 disabled:opacity-40"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
             <div className="flex items-end gap-2 rounded-2xl border border-default-200 bg-default-100/70 p-2 focus-within:border-[var(--accent)] transition-colors">
 
                 {/* Attachment button */}
                 <button
                     type="button"
                     onClick={() => mediaInputRef.current?.click()}
-                    disabled={isSendingMedia || !activeConversationId}
+                    disabled={isSending || !activeConversationId}
                     title="Attach image or video"
                     className="shrink-0 grid size-10 place-items-center rounded-xl text-default-500 hover:bg-default-200 hover:text-foreground disabled:opacity-40 transition-colors"
                 >
