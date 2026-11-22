@@ -4,15 +4,13 @@ import { hasImageKitConfig, uploadChatMedia } from "../configs/imagekit.config.j
 import { getReceiverSocketIds, io } from "../configs/socket.config.js";
 export const getUsers = async (req, res) => {
   try {
-    console.log("working")
     const loggedInUserId = req.user._id;
     const filteredUsers = await User.find({
       _id: { $ne: loggedInUserId },
     }).select("-clerkId");
-console.log(filteredUsers)
     res.status(200).json({ success: true, data: filteredUsers });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
@@ -60,7 +58,7 @@ export const getConversations = async (req, res) => {
 
     res.status(200).json({ success: true, data: conversations });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
@@ -76,7 +74,7 @@ export const getMessages = async (req, res) => {
         }).sort({createdAt: 1});
         res.status(200).json({success: true, data: messages});
     }catch(err){
-        console.log(err);
+        console.error(err);
         res.status(500).json({success: false, message: "Internal server error"});
     }
 }
@@ -111,7 +109,7 @@ export const sendMessage = async (req, res) => {
          });
         res.status(201).json({success: true, data: message});
     }catch(err){
-        console.log(err);
+        console.error(err);
         res.status(500).json({success: false, message: "Internal server error"});
     }
 }

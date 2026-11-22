@@ -68,8 +68,6 @@ export const clerkWebhook = async (req, res) => {
                 break;
             }
 
-            default:
-                console.log(`Unhandled Clerk event: ${type}`);
         }
 
         return res.status(200).json({

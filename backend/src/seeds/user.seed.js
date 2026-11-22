@@ -95,7 +95,7 @@ const seedUsers = [
 async function seedDatabase() {
   await connectDB();
 
-  const result = await User.bulkWrite(
+  await User.bulkWrite(
     seedUsers.map(([clerkId, fullName, email, profilePic]) => ({
       updateOne: {
         filter: { clerkId },
@@ -107,9 +107,6 @@ async function seedDatabase() {
     })),
   );
 
-  console.log(
-    `Seeded users. Inserted: ${result.upsertedCount}, updated: ${result.modifiedCount}, matched: ${result.matchedCount}`,
-  );
 }
 
 seedDatabase()
