@@ -29,13 +29,18 @@ export function useSelectedConversation(){
     const activeConversationId = useChatStore((state) => state.activeConversationId);
     const conversations = useChatStore((state)=> state.conversations);
     const users = useChatStore((state) => state.users);
+    const storedSelectedUser = useChatStore((state) => state.selectedUser);
     const messages = useChatStore((state)=> state.messages);
     const authUser = useAuthStore((state) => state.authUser);
     const onlineUsers = useAuthStore((state) => state.onlineUsers);
 
     const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
-    const selectedUser = activeConversationId ? users.find((user) => user._id === activeConversationId) || conversations.find((user) => user._id === activeConversationId) : null;
+    const selectedUser = activeConversationId
+        ? users.find((user) => String(user._id) === String(activeConversationId))
+            || conversations.find((user) => String(user._id) === String(activeConversationId))
+            || (String(storedSelectedUser?._id) === String(activeConversationId) ? storedSelectedUser : null)
+        : null;
 
     const activeConversation = selectedUser ? mapUserToConversation({user: selectedUser, messages, authUser, onlineUsers}): null;
 

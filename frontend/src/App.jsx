@@ -6,6 +6,7 @@ import AuthPage from './pages/AuthPage'
 import { useAuthStore } from './store/useAuthStore'
 import { useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
+import Loading from './components/Loading'
 
 function App() {
   const {isSignedIn, isLoaded} = useAuth()
@@ -15,7 +16,7 @@ function App() {
     if(isSignedIn) checkAuth();
     else clearAuth();
   }, [checkAuth, clearAuth, isLoaded, isSignedIn]);
-  if(!isLoaded || (isSignedIn && isCheckingAuth))  return <p>Loading...</p>
+  if(!isLoaded || (isSignedIn && isCheckingAuth))  return <Loading/>
   return (
     <>
     <Routes>

@@ -9,6 +9,7 @@ export const useAuthStore = create((set, get) => ({
     isCheckingAuth: true,
     onlineUsers: [],
     socket: null,
+    socketUserId: null,
 
     checkAuth: async () => {
         set({isCheckingAuth: true});
@@ -32,18 +33,32 @@ export const useAuthStore = create((set, get) => ({
     },
 
     connectSocket: (user) => {
-        if(!user || get().socket?.connected) return;
-        const socket = io(BASE_URL, {query: {userId: user._id}});
-        set({socket: socket});
+        if(!user?._id) return;
+        const userId = String(user._id);
+        const currentSocket = get().socket;
+        if(currentSocket && get().socketUserId === userId){
+            if(!currentSocket.connected) currentSocket.connect();
+            return;
+        }
+        currentSocket?.disconnect();
+
+        const socket = io(BASE_URL, {
+            query: {userId},
+            withCredentials: true,
+        });
+        set({socket, socketUserId: userId, onlineUsers: []});
 
         socket.on("getOnlineUsers", (userIds) => {
-            set({onlineUsers: userIds});
-        })
+            set({onlineUsers: userIds.map(String)});
+        });
+        socket.on("connect_error", (error) => {
+            console.error("Socket connection failed:", error.message);
+        });
     },
 
     disconnectSocket: () => {
         const socket = get().socket;
-        if(socket?.connected) socket.disconnect();
-        set({socket: null});
+        socket?.disconnect();
+        set({socket: null, socketUserId: null, onlineUsers: []});
     }
 }))

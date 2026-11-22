@@ -65,6 +65,7 @@ export default function ChatPage() {
 
                 <ChatSection
                     conversation={activeConversation}
+                    activeConversationId={activeConversationId}
                     onBack={() => setActiveConversationId(null)}
                 />
             </div>

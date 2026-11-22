@@ -53,12 +53,22 @@ export const useChatStore = create((set, get) => ({
         set({isMessagesLoading: true});
         try{
             const res = await axiosInstance.get(`/messages/${userId}`);
-            set({messages: res.data.data});
+            set((state) => (
+                String(state.activeConversationId) === String(userId)
+                    ? {messages: res.data.data}
+                    : {}
+            ));
 
         }catch(err){
-            toast.error(err.response?.data?.message || "Failed to load messages");
+            if(String(get().activeConversationId) === String(userId)){
+                toast.error(err.response?.data?.message || "Failed to load messages");
+            }
         }finally{
-            set({isMessagesLoading: false});
+            set((state) => (
+                String(state.activeConversationId) === String(userId)
+                    ? {isMessagesLoading: false}
+                    : {}
+            ));
         }
     },
 
@@ -106,11 +116,22 @@ export const useChatStore = create((set, get) => ({
     setSelectedUser: (selectedUser) => set({selectedUser}),
 
     setActiveConversationId: (activeConversationId) => {
-        set((state) => ({
-            activeConversationId,
-            selectedUser: state.users.find((user)=> user._id === activeConversationId) || state.conversations.find((user) => user._id === activeConversationId) || null,
-            messages: activeConversationId? state.messages : [],
-        }));
+        set((state) => {
+            const hasChanged = String(state.activeConversationId || "") !== String(activeConversationId || "");
+            const selectedUser = activeConversationId
+                ? state.users.find((user) => String(user._id) === String(activeConversationId))
+                    || state.conversations.find((user) => String(user._id) === String(activeConversationId))
+                    || (String(state.selectedUser?._id) === String(activeConversationId) ? state.selectedUser : null)
+                : null;
+
+            return {
+                activeConversationId,
+                selectedUser,
+                messages: activeConversationId && !hasChanged ? state.messages : [],
+                composerText: hasChanged ? "" : state.composerText,
+                isMessagesLoading: Boolean(activeConversationId && hasChanged),
+            };
+        });
     },
 
     setSearchQuery: (searchQuery) => set({searchQuery}),

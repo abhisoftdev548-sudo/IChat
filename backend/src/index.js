@@ -8,7 +8,7 @@ import path from 'path';
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import routes from './routes/index.js';
-import {app, server} from "./configs/socket.config.js";
+import {app, server, allowedOrigins} from "./configs/socket.config.js";
 
 
 app.use(
@@ -19,7 +19,7 @@ app.use(
 app.use(express.json());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   }),
 );

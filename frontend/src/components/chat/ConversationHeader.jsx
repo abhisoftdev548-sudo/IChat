@@ -2,6 +2,7 @@
 import { useState } from "react";
 import {
   ArrowLeft,
+  ChevronDown,
   Palette,
   MoreVertical,
   Volume2,
@@ -15,11 +16,21 @@ import ThemePresetModal from "../ThemePresetModal";
 
 const ConversationHeader = ({ conversation, onBack }) => {
   const [isPresetOpen, setIsPresetOpen] = useState(false);
+  const [isConversationMenuOpen, setIsConversationMenuOpen] = useState(false);
 
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const isSoundEnabled = useChatStore((state) => state.isSoundEnabled);
   const setSoundEnabled = useChatStore((state) => state.setSoundEnabled);
+  const conversations = useChatStore((state) => state.conversations);
+  const users = useChatStore((state) => state.users);
+  const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
+  const switchableUsers = [
+    ...conversations,
+    ...users.filter((user) => !conversations.some((conversation) =>
+      String(conversation._id) === String(user._id)
+    )),
+  ];
 
   const receiver = conversation?.peer || conversation;
 
@@ -46,7 +57,7 @@ const ConversationHeader = ({ conversation, onBack }) => {
         }`}
       >
         {/* Receiver Details */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="relative flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack}
@@ -81,14 +92,71 @@ const ConversationHeader = ({ conversation, onBack }) => {
           </div>
 
           <div className="min-w-0">
-            <h2 className="text-sm sm:text-base font-semibold truncate">
-              {name}
-            </h2>
+            <div className="flex items-center gap-1">
+              <h2 className="text-sm sm:text-base font-semibold truncate">
+                {name}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsConversationMenuOpen((open) => !open)}
+                aria-label="Switch conversation"
+                aria-expanded={isConversationMenuOpen}
+                title="Switch conversation"
+                className={`grid size-7 shrink-0 place-items-center rounded-lg ${
+                  isDark ? "hover:bg-white/10" : "hover:bg-black/5"
+                }`}
+              >
+                <ChevronDown size={16} />
+              </button>
+            </div>
 
             <p className="text-xs opacity-50 mt-1">
               {isOnline ? "Online" : "Offline"}
             </p>
           </div>
+          {isConversationMenuOpen && (
+            <div
+              className={`absolute left-10 top-full z-[90] mt-2 max-h-[65dvh] w-72 max-w-[calc(100vw-5rem)] overflow-y-auto rounded-xl border p-2 shadow-2xl ${
+                isDark
+                  ? "bg-[#1b1b1b] border-white/10 text-white"
+                  : "bg-white border-black/10 text-black"
+              }`}
+            >
+              <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide opacity-50">
+                Switch conversation
+              </p>
+              {switchableUsers.map((item) => {
+                const peer = item.peer || item;
+                const itemName = peer.fullName || peer.name || "User";
+                return (
+                  <button
+                    key={item._id}
+                    type="button"
+                    onClick={() => {
+                      setActiveConversationId(item._id);
+                      setIsConversationMenuOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm ${
+                      isDark ? "hover:bg-white/10" : "hover:bg-black/5"
+                    }`}
+                  >
+                    {peer.avatar || peer.avatarUrl ? (
+                      <img
+                        src={peer.avatar || peer.avatarUrl}
+                        alt=""
+                        className="size-8 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--accent)]/15 text-xs font-semibold">
+                        {itemName.trim().charAt(0).toUpperCase() || "U"}
+                      </span>
+                    )}
+                    <span className="truncate">{itemName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Header Actions */}

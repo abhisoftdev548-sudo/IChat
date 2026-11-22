@@ -1,7 +1,7 @@
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import { hasImageKitConfig, uploadChatMedia } from "../configs/imagekit.config.js";
-import { getReceiverSocketId, io } from "../configs/socket.config.js";
+import { getReceiverSocketIds, io } from "../configs/socket.config.js";
 export const getUsers = async (req, res) => {
   try {
     console.log("working")
@@ -105,11 +105,10 @@ export const sendMessage = async (req, res) => {
         })
 
         await message.save();
-         const receiverSocketId = getReceiverSocketId(receiverId);
-         // only send the message in realtime if user is online
-         if(receiverSocketId) {
-          io.to(receiverSocketId).emit("newMessage", message)
-         }
+         const receiverSocketIds = getReceiverSocketIds(receiverId);
+         receiverSocketIds.forEach((socketId) => {
+          io.to(socketId).emit("newMessage", message);
+         });
         res.status(201).json({success: true, data: message});
     }catch(err){
         console.log(err);

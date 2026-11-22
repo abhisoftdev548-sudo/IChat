@@ -5,36 +5,47 @@ import {Server} from "socket.io";
 
 const app = express();
 const server = http.createServer(app);
-const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
+const allowedOrigins = [
+    ...new Set(
+        (process.env.FRONTEND_URL || "http://localhost:5173")
+            .split(",")
+            .map((origin) => origin.trim().replace(/\/+$/, ""))
+            .filter(Boolean),
+    ),
+];
 
-const io = new Server(server, {cors: {origin: [allowedOrigin]}});
+const io = new Server(server, {
+    cors: {
+        origin: allowedOrigins,
+        credentials: true,
+    },
+});
 
-function getReceiverSocketId(userId){
-    return userSocketMap[userId];
+function getReceiverSocketIds(userId){
+    return [...(userSocketMap.get(String(userId)) || [])];
 }
 
-// online users map = {userId: socketId}
-const userSocketMap = {};
-
-
+const userSocketMap = new Map();
 
 io.on("connection", (socket) => {
-    const userId = socket.handshake.query.userId;
-    if(userId) userSocketMap[userId] = socket.id;
+    const userId = String(socket.handshake.query.userId || "");
+    if(userId){
+        const socketIds = userSocketMap.get(userId) || new Set();
+        socketIds.add(socket.id);
+        userSocketMap.set(userId, socketIds);
+    }
 
-    // io.emit() sends event to everyone - broadcast
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    io.emit("getOnlineUsers", [...userSocketMap.keys()]);
 
-    // socket.on is used to listen for events
     socket.on("disconnect", () => {
         if(userId){
-            delete userSocketMap[userId];
+            const socketIds = userSocketMap.get(userId);
+            socketIds?.delete(socket.id);
+            if(socketIds?.size === 0) userSocketMap.delete(userId);
         }
-        io.emit("getOnlineUsers", Object.keys(userSocketMap));
-    })
+        io.emit("getOnlineUsers", [...userSocketMap.keys()]);
+    });
+});
 
 
-})
-
-
-export {app, server, io, getReceiverSocketId }
+export {app, server, io, allowedOrigins, getReceiverSocketIds};
