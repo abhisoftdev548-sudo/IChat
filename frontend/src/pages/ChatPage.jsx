@@ -19,8 +19,8 @@ export default function ChatPage() {
         (state) => state.subscribeToMessages
     );
 
-    const unsubscribeToMessages = useChatStore(
-        (state) => state.unsubscribeToMessages
+    const unsubscribeFromMessages = useChatStore(
+        (state) => state.unsubscribeFromMessages
     );
 
     const { activeConversationId, activeConversation } =
@@ -40,12 +40,12 @@ export default function ChatPage() {
         getMessages(activeConversationId);
         subscribeToMessages(activeConversationId);
 
-        return () => unsubscribeToMessages();
+        return () => unsubscribeFromMessages();
     }, [
         activeConversationId,
         getMessages,
         subscribeToMessages,
-        unsubscribeToMessages,
+        unsubscribeFromMessages,
     ]);
 
     return (
